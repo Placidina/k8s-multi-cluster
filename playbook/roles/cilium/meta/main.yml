@@ -1,0 +1,13 @@
+galaxy_info:
+  role_name: cilium
+  author: Alan Placidina Maria
+  description: Manage kubectl and helm to install and configure Cilium Cluster Mesh
+  license: GPLv3
+  min_ansible_version: 2.10
+  platforms:
+  - name: Ubuntu
+    versions:
+    - focal
+    - bionic
+  galaxy_tags: []
+dependencies: []

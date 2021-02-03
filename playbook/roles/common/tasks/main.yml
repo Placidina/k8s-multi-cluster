@@ -1,0 +1,33 @@
+---
+- name: Include variables based on distro, release or family
+  include_vars: "{{ item }}"
+  with_first_found:
+  - "{{ ansible_distribution | lower }}/{{ ansible_distribution_release | lower }}.yml"
+  - "{{ ansible_distribution | lower }}.yml"
+  - "{{ ansible_os_family | lower }}.yml"
+
+- include: "{{ item }}"
+  with_first_found:
+  - "{{ ansible_distribution | lower }}/{{ ansible_distribution_release | lower }}.yml"
+  - "{{ ansible_distribution | lower }}.yml"
+  - "{{ ansible_os_family | lower }}.yml"
+
+- name: Install pip packages
+  become: yes
+  ansible.builtin.pip:
+    name: "{{ pip_packages }}"
+
+- name: Remove swapfile from /etc/fstab
+  become: yes
+  ansible.posix.mount:
+    name: "{{ item }}"
+    fstype: swap
+    state: absent
+  with_items:
+  - swap
+  - none
+
+- name: Disable swap
+  become: yes
+  ansible.builtin.command: swapoff -a
+  when: ansible_swaptotal_mb > 0

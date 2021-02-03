@@ -1,0 +1,8 @@
+---
+- hosts: all
+  roles:
+  - { role: common, tags: [all, common] }
+  - { role: containerd, tags: [all, containerd] }
+  - { role: kubernetes, tags: [all, kubernetes, k8s] }
+  - { role: master, tags: [master] }
+  - { role: worker, tags: [worker] }

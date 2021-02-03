@@ -1,0 +1,62 @@
+---
+- name: Ensure kubeadm config directory exists
+  become: yes
+  ansible.builtin.file:
+    path: /etc/kubeadm
+    state: directory
+
+- name: Render template a kubeadm init config file
+  become: yes
+  ansible.builtin.template:
+    src: init-config.yml.j2
+    dest: /etc/kubeadm/init-config.yml
+    mode: '0644'
+
+- name: Allow forward
+  become: yes
+  ansible.builtin.iptables:
+    chain: FORWARD
+    jump: ACCEPT
+
+- name: Initialize the Kubernetes cluster using kubeadm
+  become: yes
+  ansible.builtin.command: kubeadm init --config /etc/kubeadm/init-config.yml --node-name {{ node_name }}
+
+- name: Ensure kubeconfig directory exists
+  ansible.builtin.file:
+    path: /home/{{ ansible_user }}/.kube
+    state: directory
+
+- name: Setup kubeconfig for {{ ansible_user }} user
+  become: yes
+  ansible.builtin.copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /home/{{ ansible_user }}/.kube/config
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0600'
+    remote_src: yes
+
+- name: Generate join command
+  become: yes
+  ansible.builtin.command: kubeadm token create --print-join-command
+  register: join_command
+
+- name: Read kube config
+  become: yes
+  ansible.builtin.slurp:
+    src: /etc/kubernetes/admin.conf
+  register: kube_config
+
+- name: Copy kube config to local file
+  local_action:
+    module: ansible.builtin.copy
+    content: "{{ kube_config['content'] | b64decode }}"
+    dest: ../clusters/{{ cluster_name }}/kube-config
+    mode: '0600'
+
+- name: Copy join command to local file
+  local_action:
+    module: ansible.builtin.copy
+    content: "{{ join_command.stdout_lines[0] }}"
+    dest: ../clusters/{{ cluster_name }}/kube-join-command.sh

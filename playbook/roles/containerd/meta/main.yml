@@ -1,0 +1,14 @@
+galaxy_info:
+  role_name: containerd
+  author: Alan Placidina Maria
+  description: Install and configure CRI
+  license: GPLv3
+  min_ansible_version: 2.10
+  platforms:
+  - name: Ubuntu
+    versions:
+    - focal
+    - bionic
+    - xenial
+  galaxy_tags: []
+dependencies: []

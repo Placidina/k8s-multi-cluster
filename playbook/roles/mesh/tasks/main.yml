@@ -1,0 +1,57 @@
+---
+- name: Wait for cilium etcd external
+  ansible.builtin.wait_for:
+    host: "{{ item.cilium_etcd_external_ip }}"
+    port: 2379
+    delay: 15
+    timeout: 600
+  with_items: "{{ clusters }}"
+
+- name: Extract the TLS certificates
+  ansible.builtin.shell: ./extract-etcd-secrets.sh
+  args:
+    chdir: "{{ role_path }}/files"
+  environment:
+    KUBECONFIG: "{{ playbook_dir }}/../clusters/{{ item.name }}/kube-config"
+    CLUSTER_NAME: "{{ item.name }}"
+  with_items: "{{ clusters }}"
+
+- name: Generate a single Kubernetes secret from all the keys and certificates extracted
+  ansible.builtin.shell: ./generate-secret-yaml.sh > clustermesh.yaml
+  args:
+    chdir: "{{ role_path }}/files"
+  environment:
+    KUBECONFIG: "{{ playbook_dir }}/../clusters/{{ clusters[0].name }}/kube-config"
+
+- name: Generate the required segment which has to be inserted into the cilium DaemonSet
+  ansible.builtin.shell: ./generate-name-mapping.sh > ds.patch
+  args:
+    chdir: "{{ role_path }}/files"
+
+- name: Apply the patch to all DaemonSets
+  ansible.builtin.shell: kubectl -n kube-system patch ds cilium -p "$(cat ds.patch)"
+  args:
+    chdir: "{{ role_path }}/files"
+  environment:
+    KUBECONFIG: "{{ playbook_dir }}/../clusters/{{ item.name }}/kube-config"
+  with_items: "{{ clusters }}"
+
+- name: Import the cilium-clustermesh secret
+  ansible.builtin.shell: kubectl -n kube-system apply -f clustermesh.yaml
+  args:
+    chdir: "{{ role_path }}/files"
+  environment:
+    KUBECONFIG: "{{ playbook_dir }}/../clusters/{{ item.name }}/kube-config"
+  with_items: "{{ clusters }}"
+
+- name: Restart the cilium-agent
+  ansible.builtin.shell: kubectl -n kube-system delete pod -l k8s-app=cilium
+  environment:
+    KUBECONFIG: "{{ playbook_dir }}/../clusters/{{ item.name }}/kube-config"
+  with_items: "{{ clusters }}"
+
+- name: Restart the cilium-operator
+  ansible.builtin.shell: kubectl -n kube-system delete pod -l name=cilium-operator
+  environment:
+    KUBECONFIG: "{{ playbook_dir }}/../clusters/{{ item.name }}/kube-config"
+  with_items: "{{ clusters }}"

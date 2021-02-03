@@ -1,0 +1,45 @@
+---
+- name: Add cilium chart repository
+  community.kubernetes.helm_repository:
+    name: cilium
+    repo_url: https://helm.cilium.io/
+
+- name: Deploy cilium chart
+  community.kubernetes.helm:
+    name: cilium
+    chart_ref: cilium/cilium
+    chart_version: 1.9.3
+    namespace: kube-system
+    kubeconfig: ../clusters/{{ item.name }}/kube-config
+    values:
+      nodeinit:
+        enabled: true
+      kubeProxyReplacement: partial
+      hostServices:
+        enabled: false
+      externalIPs:
+        enabled: true
+      nodePort:
+        enabled: true
+      hostPort:
+        enabled: true
+      etcd:
+        enabled: true
+        managed: true
+        k8sService: true
+      ipam:
+        mode:  kubernetes
+      identityAllocationMode: kvstore
+      containerRuntime:
+        integration: containerd
+      cluster:
+        id: "{{ item.id }}"
+        name: "{{ item.name }}"
+  with_items: "{{ clusters }}"
+
+- name: Create a cilium service
+  community.kubernetes.k8s:
+    namespace: kube-system
+    src: cilium-etcd-external.yaml
+    kubeconfig: ../clusters/{{ item.name }}/kube-config
+  with_items: "{{ clusters }}"

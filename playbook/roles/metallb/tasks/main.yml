@@ -1,0 +1,21 @@
+---
+- name: Add bitnami chart repository
+  community.kubernetes.helm_repository:
+    name: bitnami
+    repo_url: https://charts.bitnami.com/bitnami
+
+- name: Deploy metallb chart
+  community.kubernetes.helm:
+    name: metallb
+    chart_ref: bitnami/metallb
+    namespace: metallb-system
+    create_namespace: yes
+    kubeconfig: ../clusters/{{ item.name }}/kube-config
+    values:
+      configInline:
+        address-pools:
+        - name: default
+          protocol: layer2
+          addresses:
+          - "{{ item.addresses }}"
+  with_items: "{{ clusters }}"

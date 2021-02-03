@@ -1,0 +1,9 @@
+**/.vagrant
+
+**/kube-config
+**/kube-join-command.sh
+
+playbook/roles/mesh/files/*
+!playbook/roles/mesh/files/extract-etcd-secrets.sh
+!playbook/roles/mesh/files/generate-name-mapping.sh
+!playbook/roles/mesh/files/generate-secret-yaml.sh

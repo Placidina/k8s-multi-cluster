@@ -1,0 +1,55 @@
+---
+- name: Copy modules conf
+  become: yes
+  ansible.builtin.copy:
+    src: containerd.conf
+    dest: /etc/modules-load.d/containerd.conf
+    mode: '0644'
+
+- name: Enable kernel module
+  become: yes
+  community.general.modprobe:
+    name: "{{ item }}"
+  with_items:
+  - overlay
+  - br_netfilter
+
+- name: Copy sysctl cri for persist across reboots
+  become: yes
+  ansible.builtin.copy:
+    src: 99-kubernetes-cri.conf
+    dest: /etc/sysctl.d/99-kubernetes-cri.conf
+    mode: '0644'
+
+- name: Apply sysctl params without reboot
+  become: yes
+  ansible.builtin.command: sysctl --system
+
+- name: Include variables based on distro, release or family
+  include_vars: "{{ item }}"
+  with_first_found:
+  - "{{ ansible_distribution | lower }}/{{ ansible_distribution_release | lower }}.yml"
+  - "{{ ansible_distribution | lower }}.yml"
+  - "{{ ansible_os_family | lower }}.yml"
+
+- include: "{{ item }}"
+  with_first_found:
+  - "{{ ansible_distribution | lower }}/{{ ansible_distribution_release | lower }}.yml"
+  - "{{ ansible_distribution | lower }}.yml"
+  - "{{ ansible_os_family | lower }}.yml"
+
+- name: Ensure containerd config directory exists
+  become: yes
+  file:
+    path: /etc/containerd
+    state: directory
+
+- name: Copy containerd config file
+  become: yes
+  ansible.builtin.copy:
+    src: config.toml
+    dest: /etc/containerd/config.toml
+    mode: '0644'
+  notify: restart containerd
+
+- meta: flush_handlers

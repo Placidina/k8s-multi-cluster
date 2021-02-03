@@ -1,0 +1,28 @@
+---
+- name: Install required system packages
+  become: yes
+  ansible.builtin.apt:
+    name: "{{ distro_packages }}"
+    state: present
+
+- name: Add docker gpg apt key
+  become: yes
+  ansible.builtin.apt_key:
+    url: "{{ docker_gpg_key_url }}"
+    state: present
+
+- name: Add docker repository
+  become: yes
+  ansible.builtin.apt_repository:
+    repo: "{{ docker_repository }}"
+    state: present
+    filename: docker-ce
+
+- name: Install containerd
+  become: yes
+  ansible.builtin.apt:
+    name: "{{ docker_packages }}"
+    state: present
+  notify: start containerd
+
+- meta: flush_handlers

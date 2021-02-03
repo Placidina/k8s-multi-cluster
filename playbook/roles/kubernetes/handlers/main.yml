@@ -1,0 +1,16 @@
+---
+- name: Start kubelet
+  become: yes
+  ansible.builtin.systemd:
+    name: kubelet
+    state: restarted
+    enabled: yes
+  listen: start kubelet
+
+- name: Restart kubelet
+  become: yes
+  ansible.builtin.systemd:
+    name: kubelet
+    state: restarted
+    daemon_reload: yes
+  listen: restart kubelet

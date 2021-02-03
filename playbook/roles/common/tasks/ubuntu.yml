@@ -1,0 +1,8 @@
+---
+- name: Update cache
+  become: yes
+  ansible.builtin.raw: apt-get update
+
+- name: Install ansible required packages
+  become: yes
+  ansible.builtin.raw: apt-get install -y {{ packages }}

@@ -1,0 +1,29 @@
+---
+- name: Include variables based on distro, release or family
+  include_vars: "{{ item }}"
+  with_first_found:
+  - "{{ ansible_distribution | lower }}/{{ ansible_distribution_release | lower }}.yml"
+  - "{{ ansible_distribution | lower }}.yml"
+  - "{{ ansible_os_family | lower }}.yml"
+
+- include: "{{ item }}"
+  with_first_found:
+  - "{{ ansible_distribution | lower }}/{{ ansible_distribution_release | lower }}.yml"
+  - "{{ ansible_distribution | lower }}.yml"
+  - "{{ ansible_os_family | lower }}.yml"
+
+- name: Ensure kubelet systemd directory exists
+  become: yes
+  file:
+    path: /etc/systemd/system/kubelet.service.d
+    state: directory
+
+- name: Configure kubelet
+  become: yes
+  ansible.builtin.lineinfile:
+    path: /etc/default/kubelet
+    line: KUBELET_EXTRA_ARGS="--node-ip={{ node_ip }} --container-runtime=remote --runtime-request-timeout=15m --container-runtime-endpoint=unix:///run/containerd/containerd.sock"
+    create: yes
+  notify: restart kubelet
+
+- meta: flush_handlers

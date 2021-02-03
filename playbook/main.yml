@@ -1,0 +1,10 @@
+---
+- hosts: all
+  vars:
+    clusters:
+    - { id: "1", name: earth, addresses: 192.168.10.101-192.168.10.255, cilium_etcd_external_ip: "192.168.10.101" }
+    - { id: "2", name: mars, addresses: 192.168.20.101-192.168.20.255, cilium_etcd_external_ip: "192.168.20.101" }
+  roles:
+  - { role: cilium, tags: [all, cilium] }
+  - { role: metallb, tags: [all, metallb] }
+  - { role: mesh, tags: [all, mesh] }

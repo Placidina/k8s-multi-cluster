@@ -1,0 +1,16 @@
+---
+- name: Copy the join command to server
+  copy:
+    src: ../clusters/{{ cluster_name }}/kube-join-command.sh
+    dest: /tmp/kube-join-command.sh
+    mode: '0777'
+
+- name: Allow forward
+  become: yes
+  ansible.builtin.iptables:
+    chain: FORWARD
+    jump: ACCEPT
+
+- name: Join the node to cluster
+  become: yes
+  command: sh /tmp/kube-join-command.sh

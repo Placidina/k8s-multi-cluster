@@ -1,0 +1,52 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  config.ssh.insert_key = false
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+  
+  config.vm.define "master" do |master|
+    master.vm.provider :virtualbox do |v|
+      v.memory = 2048
+      v.cpus = 2
+    end
+
+    master.vm.box = "bento/ubuntu-20.04"
+    master.vm.network "private_network", ip: "192.168.10.10", name: "vboxnet0"
+    master.vm.hostname = "master"
+    master.vm.provision :ansible do |ansible|
+        ansible.playbook = "../../playbook/vagrant.yml"
+        ansible.tags = "common,containerd,kubernetes,master"
+        ansible.extra_vars = {
+          ansible_python_interpreter: "/usr/bin/python3",
+          node_ip: "192.168.10.10",
+          node_name: "master",
+          pod_network_cidr: "10.2.0.0/16",
+          service_subnet: "10.3.0.0/16",
+          cluster_name: "earth"
+        }
+    end
+  end
+
+  (1..1).each do |i|
+    config.vm.define "node-#{i}" do |node|
+      node.vm.provider :virtualbox do |v|
+        v.memory = 2048
+        v.cpus = 2
+      end
+
+      node.vm.box = "bento/ubuntu-20.04"
+      node.vm.network "private_network", ip: "192.168.10.#{i + 10}", name: "vboxnet0"
+      node.vm.hostname = "node-#{i}"
+      node.vm.provision "ansible" do |ansible|
+          ansible.playbook = "../../playbook/vagrant.yml"
+          ansible.tags = "common,containerd,kubernetes,worker"
+          ansible.extra_vars = {
+            ansible_python_interpreter: "/usr/bin/python3",
+            node_ip: "192.168.10.#{i + 10}",
+            cluster_name: "earth"
+          }
+      end
+    end
+  end
+end
